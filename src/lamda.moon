@@ -9,89 +9,13 @@
 l = {}
 
 
-l.compose = (...) ->
-    funcs = {...}
+-- ==============================
+-- === ??? Functions 
+-- ==============================
 
-    (...) ->
-        args = {...}
-
-        reversed = {}
-        for i = #funcs, 1, -1
-            table.insert reversed, funcs[i]
-
-        f = (func) ->
-            args = {func(unpack(args))}
-
-        l.forEach f, reversed
-
-        args[1]
-
--- aka 'each'
-l.forEach = (func, list) ->
-    pairing = pairs
-    if l.isArrayLike(list) then pairing = ipairs
-
-    for index, value in pairing(list)
-        func(value)
-
-
-l.forEachIndexed = (func, list) ->
-    pairing = pairs
-    if l.isArrayLike(list) then pairing = ipairs
-
-    for index, value in pairing(list)
-        func(value, index, list)
-
-
-l.identity = (value) ->
-    value
-
-
-l.isArrayLike = (value) ->
-    if type(value) == "table" and (value[1] or next(value) == nil)
-        true
-    else
-        false
-
-
-l.isEmpty = (value) ->
-    if not value 
-        return true
-    elseif l.isArrayLike(value) or l.isObject(value)
-        return next(value) == nil
-    elseif l.isString(value)
-        return string.len(value) == 0
-    else
-        return false
-
--- aka 'collect'
-l.map = (func, list) ->
-    pairing = pairs
-    if l.isArrayLike(list) then pairing = ipairs
-
-    newList = {}
-    for index, value in pairing(list)
-        table.insert newList, func(value)
-
-    newList
-
-
-l.memoize = (func) ->
-    list = {}
-
-    return (...) ->
-        if not list[...]
-            list[...] = func(...)
-
-        return list[...]
-
-
-l.wrap = (func, wrapper) ->
-    return (...) ->
-        return wrapper(func, ...)
-
-
--- ========== List Functions ==========
+-- ==============================
+-- === Array 
+-- ==============================
 
 l.slice = (list, start, stop) ->
     array = {}
@@ -108,63 +32,42 @@ l.join = (list, separator) ->
     table.concat(list,separator) 
 
 
--- aka 'first'
-l.head = (list, count) ->
-    if not list then return nil
+l.head = (list, count = 1) ->
+    if not list or #list < 1
+        return nil
 
-    if not count then
+    if count == 1
         list[1]
     else
-        l.slice(list, 1, count)
+        unpack l.slice(list, 1, count)
+
+-- head aka:
+l.first = l.head
+l.take = l.head
 
 
-l.tail = (list, start) ->
-    start = start or 2
+l.tail = (list, count) ->
+    if not list or #list < 2 then return nil
 
-    return l.slice(list, start, #list)
+    if not count then
+        count = 1
 
--- aka 'filter'
-l.select = (func, list) ->
-    found = {}
-    f = (value, key, object) ->
-        if func(value, key, object)
-            table.insert(found, value)
+    start, stop, array = count + 1, #list, {}
+    l.slice(list, start, stop)
 
-    l.forEach f, list
-    found
+-- head aka:
+l.drop = l.tail
+l.rest = l.tail
 
 
-l.reject = (func, list) ->
-    found = {}
-    f = (value, key, object) ->
-        if not func(value, key, object)
-            table.insert(found, value)
+l.last = (list, count = 1) ->
+    if not list then return nil
 
-    l.forEach f, list
-    found
-
-
--- aka 'inject', 'foldl'
-l.reduce = (func, list, memo) ->
-    init = memo == nil
-    f = (value, key, object) ->
-        if init
-            memo = value
-            init = false
-        else
-            memo = func(memo, value, key, object)
-    
-    l.forEach f, list
-
-    if init then
-        error("Reduce of empty array with no initial value")
-
-    memo
-
-
--- aka 'foldr'
-l.reduceRight = (func, list, memo) ->
-    l.reduce func, l.reverse(list), memo
+    if count == 1
+        return list[#list]
+    else
+        start, stop, array = #list - count + 1, #list, {}
+        unpack l.slice(list, start, stop)
 
 
 l.reverse = (list) ->
@@ -183,9 +86,103 @@ l.reverse = (list) ->
     newList
 
 
+-- ==============================
+-- === Collection 
+-- ==============================
 
-l.any = (func, list) ->
-    if l.isEmpty(list) 
+l.map = (func, list) ->
+    pairing = pairs
+    if l.isArray(list) then pairing = ipairs
+
+    newList = {}
+    for index, value in pairing(list)
+        table.insert newList, func(value)
+
+    newList
+
+-- collect aka:
+l.collect = l.map
+
+
+l.filter = (func, coll) ->
+    found = {}
+    f = (value, key, object) ->
+        if func(value, key, object)
+            table.insert(found, value)
+
+    l.each f, coll
+    found
+
+-- filter aka:
+l.select = l.filter
+
+
+
+l.reject = (func, coll) ->
+    found = {}
+    f = (value, key, object) ->
+        if not func(value, key, object)
+            table.insert(found, value)
+
+    l.each f, coll
+    found
+
+
+l.reduce = (func, memo, coll) ->
+    --init = memo == nil
+    --f = (value, key, object) ->
+    --    if init
+    --        memo = value
+    --        init = false
+    --    else
+    --        memo = func(memo, value, key, object)
+    
+    f = (value) ->
+        memo = func(memo, value)
+
+    l.each f, coll
+
+    if init then
+        error("Reduce of empty array with no initial value")
+
+    memo
+
+-- reduce aka:
+l.inject = l.reduce
+l.fold = l.reduce
+l.foldl = l.reduce
+
+
+l.reduceRight = (func, memo, coll) ->
+    l.reduce func, memo, l.reverse(coll)
+
+-- reduceRight aka:
+l.foldr = l.reduceRight
+
+
+l.each = (func, coll) ->
+    pairing = pairs
+    if l.isArray(coll) then pairing = ipairs
+
+    for index, value in pairing(coll)
+        --print value
+        func(value)
+
+l.forEach = l.each
+
+
+l.eachIndexed = (func, coll) ->
+    pairing = pairs
+    if l.isArray(coll) then pairing = ipairs
+
+    for index, value in pairing(coll)
+        func(value, index, coll)
+
+l.forEachIndexed = l.eachIndexed
+
+
+l.any = (func, coll) ->
+    if l.isEmpty(coll) 
         return false
 
     func = func or l.identity
@@ -193,13 +190,13 @@ l.any = (func, list) ->
     f = (value, index, object) ->
         if not found and func(value, index, object)
             found = true
-    l.forEach f, list
+    l.each f, coll
 
     found
 
 
-l.all = (func, list) ->
-    if l.isEmpty list
+l.all = (func, coll) ->
+    if l.isEmpty coll
         return false
 
     func = func or _.identity
@@ -208,16 +205,16 @@ l.all = (func, list) ->
     f = (value, index, object) ->
         if found and not func(value, index, object)
             found = false
-    l.forEach f, list
+    l.each f, coll
 
     found
 
 
-l.flatten = (list, shallow, output) ->
+l.flatten = (coll, shallow, output) ->
     output = output or {}
 
     f = (value) ->
-        if l.isArrayLike(value) then
+        if l.isArray(value) then
             if shallow then
                 l.forEach ((v) -> table.insert(output, v)), value
             else
@@ -225,25 +222,30 @@ l.flatten = (list, shallow, output) ->
         else
             table.insert(output, value)
 
-    l.forEach f, list
+    l.each f, coll
     return output
 
 
 l.concat = (...) ->
     values = l.flatten({...}, true)
+    --print values
     cloned = {}
 
-    f = (v) ->
-        table.insert(cloned, v)
-    l.forEach f, values 
+    f = (value) ->
+        table.insert(cloned, value)
+    l.each f, values 
 
     return cloned
 
 
+-- ==============================
+-- === Functions 
+-- ==============================
+
 l.partial = (func, ...) ->
     args = {...}
-    return (self, ...) ->
-        return func(self, unpack(l.concat(args, {...})))
+    return (...) ->
+        return func(unpack(l.concat(args, {...})))
 
 
 
@@ -264,13 +266,14 @@ l.partial = (func, ...) ->
 l.curry = (func, num_args) ->
   
     -- currying 2-argument functions seems to be the most popular application
-    num_args = num_args or 2
+    --num_args = num_args or 2
+    num_args = num_args or debug.getinfo(func, "u").nparams
   
     -- helper
     curry_h = (argtrace, n) ->
         if 0 == n then
             -- reverse argument list and call function
-            return func(l.__reverse(argtrace()))
+            return func(l.reverseArgs(argtrace()))
         else
             -- "push" argument (by building a wrapper function) and decrement n
             return (onearg) ->
@@ -285,7 +288,7 @@ l.curry = (func, num_args) ->
 -- reverse(...) : take some tuple and return a tuple of elements in reverse order
 --
 -- e.g. "reverse(1,2,3)" returns 3,2,1
-l.__reverse = (...) ->
+l.reverseArgs = (...) ->
    
     --reverse args by building a function to do it, similar to the unpack() example
     reverse_h = (acc, v, ...) ->
@@ -298,7 +301,52 @@ l.__reverse = (...) ->
     return reverse_h((-> return), ...)
 
 
--- ========== Non-Ramda Functions ==========
+
+l.compose = (...) ->
+    funcs = {...}
+
+    if #funcs < 1
+        return nil
+
+    (...) ->
+        args = {...}
+
+        if #args == 0 then return ->
+
+        reversed = {}
+        for i = #funcs, 1, -1
+            table.insert reversed, funcs[i]
+
+        f = (func) ->
+            args = {func(unpack(args))}
+
+        l.forEach f, reversed
+
+        args[1]
+
+
+l.memoize = (func) ->
+    list = {}
+
+    return (...) ->
+        if not list[...]
+            list[...] = func(...)
+
+        return list[...]
+
+
+l.wrap = (func, wrapper) ->
+    return (...) ->
+        return wrapper(func, ...)
+
+
+-- ==============================
+-- === Objects
+-- ==============================
+
+l.identity = (value) ->
+    value
+
 
 l.isObject = (value) ->
     type(value) == "table"
@@ -308,38 +356,32 @@ l.isString = (value) ->
     type(value) == "string"
 
 
-l.last = (list, count) ->
-    if not list then return nil
-
-    if not count then
-        return list[#list]
+l.isArray = (value) ->
+    if type(value) == "table" and (value[1] or next(value) == nil)
+        true
     else
-        start, stop, array = #list - count + 1, #list, {}
-        return l.slice(list, start, stop)
+        false
+
+
+l.isEmpty = (value) ->
+    if not value 
+        return true
+    elseif l.isArray(value) or l.isObject(value)
+        return next(value) == nil
+    elseif l.isString(value)
+        return string.len(value) == 0
+    else
+        return false
+
+
+-- ==============================
+-- === Experimental / Pending
+-- ==============================
 
 
 
-
-
--- ===========================================
-
--- ========== In Process Functions ==========
-
-
-
-
-l.createCompose = (...) ->
-
-    va = {...}
-
-    fn = va[#va]
-    --for i = #va, 2, -1
-    --    fn = va[i](va[i-1], )
-
-    fn
-
-
-
-
+-- ==============================
+-- === End 
+-- ==============================
 
 l
