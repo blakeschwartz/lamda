@@ -1,5 +1,6 @@
 
 l = require "src/lamda"
+c = require "src/lamdac"
 
 
 describe "#collection,", ->
@@ -21,6 +22,7 @@ describe "#collection,", ->
             f = (x) -> x > "b" and x < "f"
             assert.are.same {"a", "b", "f"}, l.reject(f, list)
 
+
     describe "map,", ->
         arrayn = {2, 4, 6, 8}
         arraya = {"A", "B", "C", "D"}
@@ -28,13 +30,14 @@ describe "#collection,", ->
         prefixi = (x) -> "i"..x
 
         it "map numbers", ->
-            assert.are.same( {4, 8, 12, 16}, l.map( times2, arrayn ) )
+            assert.are.same {4, 8, 12, 16}, c.map(times2)(arrayn) 
 
         it "map strings", ->
-            assert.are.same( {"iA", "iB", "iC", "iD"}, l.map( prefixi, arraya ) )
+            assert.are.same( {"iA", "iB", "iC", "iD"}, c.map(prefixi)(arraya) )
 
         it "collect", ->
-            assert.are.same( l.map( times2, arrayn ), l.collect( times2, arrayn ) )
+            assert.are.same( c.map(times2)(arrayn), c.collect(times2)(arrayn) )
+
 
     describe "reduce,", ->
 
@@ -61,6 +64,7 @@ describe "#collection,", ->
             h = g("")
             assert.are.same "abcdef", h(list)
 
+
     describe "other,", ->
 
         it "#flatten", ->
@@ -79,7 +83,17 @@ describe "#collection,", ->
 
 
         it "join", ->
+            --todo - how do we handle nil where a list is expected?
+            --assert.has_error l.join(nil)
+            assert.are.equal "", l.join({})
+            assert.are.equal "a", l.join({"a"}, ',')
             assert.are.equal "abcdef", l.join(list)
+            assert.are.equal "a,b,c,d,e,f", l.join(list, ',')
+
+        it "slice", ->
+            assert.are.same {"a"}, l.slice(list, 1, 1)
+            assert.are.same {"f"}, l.slice(list, #list, #list)
+            assert.are.same {"b", "c", "d", "e"}, l.slice(list, 2, #list-1)
 
         it "any", ->
             f = (x) -> x > 'a' and x < 'd'

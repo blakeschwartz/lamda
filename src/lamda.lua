@@ -8,7 +8,9 @@ l.slice = function(list, start, stop)
   return array
 end
 l.join = function(list, separator)
-  separator = separator or ""
+  if separator == nil then
+    separator = ""
+  end
   return table.concat(list, separator)
 end
 l.head = function(list, count)
@@ -27,11 +29,11 @@ end
 l.first = l.head
 l.take = l.head
 l.tail = function(list, count)
+  if count == nil then
+    count = 1
+  end
   if not list or #list < 2 then
     return nil
-  end
-  if not count then
-    count = 1
   end
   local start, stop, array = count + 1, #list, { }
   return l.slice(list, start, stop)
@@ -64,13 +66,13 @@ l.reverse = function(list)
   end
   return newList
 end
-l.map = function(func, list)
+l.map = function(func, coll)
   local pairing = pairs
-  if l.isArray(list) then
+  if l.isArray(coll) then
     pairing = ipairs
   end
   local newList = { }
-  for index, value in pairing(list) do
+  for index, value in pairing(coll) do
     table.insert(newList, func(value))
   end
   return newList
@@ -105,9 +107,6 @@ l.reduce = function(func, memo, coll)
     memo = func(memo, value)
   end
   l.each(f, coll)
-  if init then
-    error("Reduce of empty array with no initial value")
-  end
   return memo
 end
 l.inject = l.reduce
@@ -173,7 +172,7 @@ l.flatten = function(coll, shallow, output)
   f = function(value)
     if l.isArray(value) then
       if shallow then
-        return l.forEach((function(v)
+        return l.each((function(v)
           return table.insert(output, v)
         end), value)
       else
@@ -286,11 +285,29 @@ end
 l.identity = function(value)
   return value
 end
+l.isBoolean = function(value)
+  return type(value) == "boolean"
+end
+l.isFinite = function(value)
+  return l.isNumber(value) and -math.huge < value and value < math.huge
+end
 l.isObject = function(value)
   return type(value) == "table"
 end
 l.isString = function(value)
   return type(value) == "string"
+end
+l.isNaN = function(value)
+  return l.isNumber(value) and value ~= value
+end
+l.isNil = function(value)
+  return value == nil
+end
+l.isNumber = function(value)
+  return type(value) == "number"
+end
+l.isFunction = function(value)
+  return type(value) == "function"
 end
 l.isArray = function(value)
   if type(value) == "table" and (value[1] or next(value) == nil) then
@@ -310,4 +327,6 @@ l.isEmpty = function(value)
     return false
   end
 end
+l.cmap = l.curry(l.map)
+l.creduce = l.curry(l.reduce, 3)
 return l

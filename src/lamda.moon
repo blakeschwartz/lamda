@@ -9,9 +9,6 @@
 l = {}
 
 
--- ==============================
--- === ??? Functions 
--- ==============================
 
 -- ==============================
 -- === Array 
@@ -21,22 +18,21 @@ l.slice = (list, start, stop) ->
     array = {}
     stop = stop or #list
 
-    for index = start, stop, 1 do
+    for index = start, stop, 1
         table.insert(array, list[index])
 
     return array
 
 
-l.join = (list, separator) ->
-    separator = separator or ""
-    table.concat(list,separator) 
+l.join = (list, separator = "") ->
+    table.concat(list, separator) 
 
 
 l.head = (list, count = 1) ->
     if not list or #list < 1
         return nil
 
-    if count == 1
+    if count == 1 -- optimization
         list[1]
     else
         unpack l.slice(list, 1, count)
@@ -46,11 +42,9 @@ l.first = l.head
 l.take = l.head
 
 
-l.tail = (list, count) ->
+-- count represents the size of the head.
+l.tail = (list, count = 1) ->
     if not list or #list < 2 then return nil
-
-    if not count then
-        count = 1
 
     start, stop, array = count + 1, #list, {}
     l.slice(list, start, stop)
@@ -90,18 +84,19 @@ l.reverse = (list) ->
 -- === Collection 
 -- ==============================
 
-l.map = (func, list) ->
+l.map = (func, coll) ->
     pairing = pairs
-    if l.isArray(list) then pairing = ipairs
+    if l.isArray(coll) then pairing = ipairs
 
     newList = {}
-    for index, value in pairing(list)
+    for index, value in pairing(coll)
         table.insert newList, func(value)
 
     newList
 
 -- collect aka:
 l.collect = l.map
+
 
 
 l.filter = (func, coll) ->
@@ -142,8 +137,8 @@ l.reduce = (func, memo, coll) ->
 
     l.each f, coll
 
-    if init then
-        error("Reduce of empty array with no initial value")
+    --if init then
+    --    error("Reduce of empty array with no initial value")
 
     memo
 
@@ -216,7 +211,7 @@ l.flatten = (coll, shallow, output) ->
     f = (value) ->
         if l.isArray(value) then
             if shallow then
-                l.forEach ((v) -> table.insert(output, v)), value
+                l.each ((v) -> table.insert(output, v)), value
             else
                 l.flatten(value, false, output)
         else
@@ -239,7 +234,7 @@ l.concat = (...) ->
 
 
 -- ==============================
--- === Functions 
+-- === Functional 
 -- ==============================
 
 l.partial = (func, ...) ->
@@ -348,12 +343,36 @@ l.identity = (value) ->
     value
 
 
+l.isBoolean = (value) ->
+    type(value) == "boolean"
+
+
+l.isFinite = (value) ->
+    l.isNumber(value) and -math.huge < value and value < math.huge
+
+
 l.isObject = (value) ->
     type(value) == "table"
 
 
 l.isString = (value) ->
     type(value) == "string"
+
+
+l.isNaN = (value) ->
+    l.isNumber(value) and value ~= value
+
+
+l.isNil = (value) ->
+    value == nil
+
+
+l.isNumber = (value) ->
+    type(value) == "number"
+
+
+l.isFunction = (value) ->
+    type(value) == "function"
 
 
 l.isArray = (value) ->
@@ -378,6 +397,9 @@ l.isEmpty = (value) ->
 -- === Experimental / Pending
 -- ==============================
 
+l.cmap = l.curry(l.map)
+
+l.creduce = l.curry(l.reduce, 3)
 
 
 -- ==============================
