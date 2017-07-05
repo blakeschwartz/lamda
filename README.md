@@ -1,6 +1,8 @@
-# Warning 
+# No Longer Under Development
 
-This code base is currently being assembled. Much of the functionality is untested and much of it is not yet implemented. Check the doc directory for the manual.md. If something is documented then it is probably implemented and tested. 
+This repository is no longer under development. The author is no longer involved in Lua development and is therefor no longer working on the project.
+
+Much of the functionality is untested and much of it is not yet implemented. Check the doc directory for the manual.md. If something is documented then it is probably implemented and tested. 
 
 Also note that there is code that requires Lua 5.2. This may change in the future if 5.1 compatability is deemed necessary. 
 
